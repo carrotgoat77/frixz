@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HONOURED ONE - Shop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // --- Core Cart Logic using localStorage ---
+
+        // Load cart items from localStorage, or initialize an empty array
+        let cartItems = JSON.parse(localStorage.getItem('Honoured Cart')) || [];
+        const cartCountElement = document.getElementById('cart-count');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // CALLING updateCartCount() HERE FIXES THE INITIAL '0' DISPLAY BUG
+            updateCartCount(); 
+            filterProducts(); // Initial filter call
+            
+            // Mobile Filter Toggle Setup
+            const filterToggle = document.getElementById('filter-toggle');
+            const filterSidebar = document.getElementById('filter-sidebar');
+
+            filterToggle.addEventListener('click', () => {
+                filterSidebar.classList.toggle('hidden');
+            });
+        });
+
+        function saveCart() {
+            localStorage.setItem('Honoured Cart', JSON.stringify(cartItems));
+        }
+
+        function updateCartCount() {
+            // Count total number of items (not unique products) 
+            const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+            cartCountElement.textContent = totalItems;
+        }
+
+        function addToCart(buttonElement) {
+            const productCard = buttonElement.closest('.product-card');
+            
+            // Extract product data from the card's attributes
+            const productName = productCard.getAttribute('data-name');
+            // NOTE: price in data-price must not contain commas for parseFloat to work correctly
+            const productPrice = parseFloat(productCard.getAttribute('data-price')); 
+            
+            // Find if the product already exists in the cart
+            const existingItem = cartItems.find(item => item.name === productName);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cartItems.push({
+                    name: productName,
+                    price: productPrice,
+                    quantity: 1
+                });
+            }
+
+            saveCart();
+            updateCartCount();
+
+            // Simple user feedback (visual only)
+            buttonElement.textContent = 'Added!';
+            buttonElement.disabled = true;
+
+            setTimeout(() => {
+                buttonElement.textContent = 'Add to Cart';
+                buttonElement.disabled = false;
+            }, 800);
+        }
+
+        // --- Filtering/Search Functionality (Remains the same) ---
+        function filterProducts() {
+            const searchTerm = document.getElementById('product-search').value.toLowerCase();
+            const selectedCategory = document.querySelector('input[name="category"]:checked').value;
+            const maxPrice = parseInt(document.getElementById('price-range').value);
+            const productList = document.getElementById('product-list');
+            const products = productList.querySelectorAll('.product-card');
+            const noResults = document.getElementById('no-results');
+            let foundCount = 0;
+
+            products.forEach(product => {
+                const category = product.getAttribute('data-category');
+                const price = parseInt(product.getAttribute('data-price'));
+                const name = product.getAttribute('data-name').toLowerCase(); 
+
+                const matchesCategory = selectedCategory === 'all' || category === selectedCategory;
+                const matchesPrice = price <= maxPrice;
+                const matchesSearch = name.includes(searchTerm);
+
+                if (matchesCategory && matchesPrice && matchesSearch) {
+                    product.classList.remove('hidden');
+                    foundCount++;
+                } else {
+                    product.classList.add('hidden');
+                }
+            });
+
+            // Toggle no results message
+            if (foundCount === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Custom styles to enhance the classy, neon look */
+        body {
+            background-color: #1A0B2C; /* Apply deep purple-black background */
+            font-family: 'Inter', sans-serif;
+        }
+        .product-card {
+            /* Smooth transition for hover effects */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(255, 56, 100, 0.2); /* Neon pink glow on hover */
+        }
+        .neon-glow-text {
+            /* Subtle glow for the header text */
+            text-shadow: 0 0 5px rgba(255, 56, 100, 0.5), 0 0 10px rgba(255, 56, 100, 0.3);
+        }
+        /* Custom Button Style for "Add to Cart" */
+        .add-to-cart-btn {
+            background-color: #FF3864;
+            color: #fff;
+            padding: 12px 32px;
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            border-radius: 9999px; /* rounded-full */
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.3s;
+            text-transform: uppercase;
+        }
+        .add-to-cart-btn:hover {
+            background-color: #E01E50;
+            box-shadow: 0 8px 15px rgba(255, 56, 100, 0.4);
+        }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen">
+
+    <header class="bg-gray-900/50 backdrop-blur-sm p-4 sticky top-0 z-10 border-b border-neon-pink/30">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+            <h1 class="text-3xl font-extrabold tracking-tight neon-glow-text">
+                Honoured One
+            </h1>
+            
+            <div class="flex items-center space-x-6 w-full md:w-auto">
+                <div class="flex-grow md:flex-grow-0 md:w-64 lg:w-96">
+                    <input type="text" id="product-search" oninput="filterProducts()" placeholder="Search gadgets, apparel, and more..."
+                        class="w-full p-2.5 bg-gray-800 text-gray-200 border border-neon-pink/50 rounded-lg focus:ring-2 focus:ring-neon-pink focus:border-neon-pink transition duration-150">
+                </div>
+
+                <a href="cart.html" class="relative text-gray-100 hover:text-neon-pink transition duration-150 p-2">
+                    <i class="fas fa-shopping-cart text-2xl"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-neon-pink text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        0
+                    </span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 pt-8 lg:grid lg:grid-cols-[280px_1fr] lg:gap-8">
+        
+        <button id="filter-toggle" class="lg:hidden w-full p-3 mb-4 bg-neon-pink text-gray-900 font-bold rounded-lg shadow-lg">
+            Show Filters
+        </button>
+
+        <aside id="filter-sidebar" class="hidden lg:block lg:sticky lg:top-24 h-fit p-6 bg-gray-800/70 backdrop-blur-sm rounded-xl shadow-2xl space-y-6">
+            <h2 class="text-2xl font-bold border-b border-gray-700 pb-3 mb-4 text-neon-pink">Refine Your Search</h2>
+            
+            <div>
+                <h3 class="text-lg font-semibold mb-3">Category</h3>
+                <div class="filter-content space-y-2">
+                    <label class="flex items-center space-x-2 text-gray-300 hover:text-neon-pink transition">
+                        <input type="radio" name="category" value="all" checked onchange="filterProducts()" class="form-radio h-4 w-4 text-neon-pink bg-gray-700 border-gray-600 focus:ring-neon-pink">
+                        <span>All Products</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-gray-300 hover:text-neon-pink transition">
+                        <input type="radio" name="category" value="tech" onchange="filterProducts()" class="form-radio h-4 w-4 text-neon-pink bg-gray-700 border-gray-600 focus:ring-neon-pink">
+                        <span>Gadgets</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-gray-300 hover:text-neon-pink transition">
+                        <input type="radio" name="category" value="fashion" onchange="filterProducts()" class="form-radio h-4 w-4 text-neon-pink bg-gray-700 border-gray-600 focus:ring-neon-pink">
+                        <span>Hoddies/jackets</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-gray-300 hover:text-neon-pink transition">
+                        <input type="radio" name="category" value="home" onchange="filterProducts()" class="form-radio h-4 w-4 text-neon-pink bg-gray-700 border-gray-600 focus:ring-neon-pink">
+                        <span>Laptops</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold mb-3">Max Price</h3>
+                <div class="filter-content pt-2">
+                    <input type="range" id="price-range" min="499" max="3000" value="3000" oninput="document.getElementById('price-value').textContent = this.value; filterProducts();" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <p class="text-sm text-center mt-2 text-gray-400">Up to ₹<span id="price-value">3000</span></p>
+                </div>
+            </div>
+            
+        </aside>
+
+        <section>
+            <h2 class="text-4xl font-extrabold mb-8 text-center lg:text-left text-white tracking-wider">
+                Explore The Collection (26 Items)
+            </h2>
+            
+            <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+                
+              <div class="product-card bg-gray-800/70 p-6 rounded-xl border border-gray-700 flex flex-col items-center text-center" data-category="tech" data-price="2499" data-name="Rockerz 430">
+    
+    <a href="rockerz-430.html" class="w-full flex flex-col items-center flex-grow group">
+        <img src="download (7).jpg" alt="Rockerz 430" class="rounded-lg mb-4 w-full h-48 object-cover transition duration-300 group-hover:scale-[1.03]">
+        <h3 class="text-xl font-bold mb-2 text-neon-pink group-hover:text-white transition">Rockerz 430</h3>
+        <p class="text-sm text-gray-400 mb-4 flex-grow">FUJIFILM Instax Mini 11 Instant Camera black</p>
+    </a> <p class="text-2xl font-extrabold text-white mb-4">₹2,499</p>
+    <button class="add-to-cart-btn" onclick="addToCart(this)">
+        Add to Cart
+    </button>
+</div>
+
+                <div class="product-card bg-gray-800/70 p-6 rounded-xl border border-gray-700 flex flex-col items-center text-center" data-category="fashion" data-price="699" data-name="HODDIE">
+                    <img src="c1.jpg" alt="HODDIE" class="rounded-lg mb-4 w-full h-48 object-cover">
+                    <h3 class="text-xl font-bold mb-2 text-neon-pink">HODDIE</h3>
+                    <p class="text-sm text-gray-400 mb-4 flex-grow">Men & Women Full Sleeve Graphic Print Hooded Sweatshirt</p>
+                    <p class="text-2xl font-extrabold text-white mb-4">₹699</p>
+                    <button class="add-to-cart-btn" onclick="addToCart(this)"> 
+                        Add to Cart
+                    </button>
+                </div>
+                
+                <div class="product-card bg-gray-800/70 p-6 rounded-xl border border-gray-700 flex flex-col items-center text-center" data-category="home" data-price="74999" data-name="LENVO LOQ">
+                    <img src="l1.jpg" alt="LENVO LOQ" class="rounded-lg mb-4 w-full h-48 object-cover">
+                    <h3 class="text-xl font-bold mb-2 text-neon-pink">LENVO LOQ</h3>
+                    <p class="text-sm text-gray-400 mb-4 flex-grow">Lenovo LOQ Intel Core i5 13th Gen 13450HX - (16 GB/512 GB SSD/Windows 11 Home/6 GB Graphics/NVIDIA GeForce RTX 4050) 15IRX9 Gaming Laptop </p>
+                    <p class="text-2xl font-extrabold text-white mb-4">₹74,999</p>
+                    <button class="add-to-cart-btn" onclick="addToCart(this)">
+                        Add to Cart
+                    </button>
+                </div>
+
+                <div class="product-card bg-gray-800/70 p-6 rounded-xl border border-gray-700 flex flex-col items-center text-center" data-category="tech" data-price="2999" data-name="BOat m4">
+                    <img src="download (8).jpg" alt="BOat m4" class="rounded-lg mb-4 w-full h-48 object-cover">
+                    <h3 class="text-xl font-bold mb-2 text-neon-pink">BOat m4</h3>
+                    <p class="text-sm text-gray-400 mb-4 flex-grow">boAt Rockerz 480 w/ Beast Mode, RGB LEDs(6 Light Modes), 60HRS Playback & ENx Tech Bluetooth (White Sabre, On the Ear)</p>
+                    <p class="text-2xl font-extrabold text-white mb-4">₹2,999</p>
+                    <button class="add-to-cart-btn" onclick="addToCart(this)">
+                        Add to Cart
+                    </button>
+                </div>
+
+                <div class="product-card bg-gray-800/70 p-6 rounded-xl border border-gray-700 flex flex-col items-center text-center" data-category="fashion" data-price="999" data-name="Reflective Fitness jacket">
+                    <img src="c2.jpg" alt="Reflective Fitness jacket" class="rounded-lg mb-4 w-full h-48 object-cover">
+                    <h3 class="text-xl font-bold mb-2 text-neon-pink">Reflective Fitness jacket</h3>
+                    <p class="text-sm text-gray-400 mb-4 flex-grow">High-visibility workout wear with four-way stretch fabric.</p>
+                    <p class="text-2xl font-extrabold text-white mb-4">₹999</p>
+                    <button class="add-to-cart-btn" onclick="addToCart(this)">
+                        Add to Cart
+                    </button>
+                </div>
+
+                <div class="product-card bg-gray-800/70 p-6 rounded-xl border border-gray-700 flex flex-col items-
